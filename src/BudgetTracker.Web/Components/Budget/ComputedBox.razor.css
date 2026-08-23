@@ -1,0 +1,42 @@
+.computed-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0.85rem;
+    background: #eef2f6;
+    border: 1px solid #c5ced8;
+}
+
+.computed-box.surplus {
+    margin: 0.85rem 0;
+    background: #1d3557;
+    border-color: #1d3557;
+    color: #f6f0e4;
+}
+
+.computed-box.surplus.deficit {
+    background: #6b2a2a;
+    border-color: #6b2a2a;
+}
+
+.computed-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.computed-value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.amount {
+    min-width: 4.5rem;
+    text-align: right;
+    font-size: 1.05rem;
+    font-weight: 600;
+}

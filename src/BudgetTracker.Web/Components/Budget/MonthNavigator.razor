@@ -1,0 +1,67 @@
+@using System.Globalization
+
+<div class="month-nav">
+    <button type="button" class="arrow" @onclick="OnPrevious" aria-label="Previous month">‹</button>
+
+    <label class="month-field">
+        <span>Budget month</span>
+        <input type="month"
+               value="@MonthValue"
+               @onchange="OnMonthInput" />
+    </label>
+
+    <button type="button" class="arrow" @onclick="OnNext" aria-label="Next month">›</button>
+
+    <span class="status @(IsSubmitted ? "submitted" : "draft")">
+        @(IsSubmitted ? "Submitted" : "Not submitted")
+    </span>
+
+    @if (SavedMonths.Count > 0)
+    {
+        <label class="saved-field">
+            <span>Saved months</span>
+            <select @onchange="OnMonthInput">
+                @if (SavedMonths.All(month => month.Period != Period))
+                {
+                    <option value="@MonthValue" selected>@Period.ToString("MMMM yyyy")</option>
+                }
+                @foreach (var month in SavedMonths)
+                {
+                    <option value="@ToMonthValue(month.Period)" selected="@(month.Period == Period)">
+                        @month.Period.ToString("MMMM yyyy") — @(month.IsSubmitted ? "submitted" : "draft")
+                    </option>
+                }
+            </select>
+        </label>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DateOnly Period { get; set; }
+    [Parameter] public bool IsSubmitted { get; set; }
+    [Parameter] public IReadOnlyList<MonthWorksheetSummary> SavedMonths { get; set; } = [];
+    [Parameter] public EventCallback<DateOnly> PeriodChanged { get; set; }
+
+    private string MonthValue => ToMonthValue(Period);
+
+    private Task OnPrevious() => PeriodChanged.InvokeAsync(Period.AddMonths(-1));
+
+    private Task OnNext() => PeriodChanged.InvokeAsync(Period.AddMonths(1));
+
+    private Task OnMonthInput(ChangeEventArgs e)
+    {
+        if (!DateOnly.TryParseExact(
+                $"{e.Value}-01",
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var parsed))
+        {
+            return Task.CompletedTask;
+        }
+
+        return PeriodChanged.InvokeAsync(BudgetForm.FirstOfMonth(parsed));
+    }
+
+    private static string ToMonthValue(DateOnly period) => period.ToString("yyyy-MM");
+}

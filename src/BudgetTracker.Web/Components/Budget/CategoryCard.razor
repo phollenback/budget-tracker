@@ -1,0 +1,18 @@
+<section class="category-card">
+    <h2>@Title</h2>
+    @if (!string.IsNullOrWhiteSpace(Note))
+    {
+        <p class="note">@Note</p>
+    }
+    @foreach (var line in Lines)
+    {
+        <LineRow Line="line" Changed="Changed" />
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Note { get; set; }
+    [Parameter, EditorRequired] public IReadOnlyList<BudgetLine> Lines { get; set; } = [];
+    [Parameter] public EventCallback Changed { get; set; }
+}

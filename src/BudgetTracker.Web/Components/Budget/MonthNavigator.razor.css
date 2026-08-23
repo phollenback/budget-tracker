@@ -1,0 +1,76 @@
+.month-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    padding: 0.85rem 1rem;
+    background: #f3eee3;
+    border: 1px solid #d8d0c0;
+}
+
+.arrow {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid #1d3557;
+    background: #fff;
+    color: #1d3557;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.arrow:hover {
+    background: #1d3557;
+    color: #f6f0e4;
+}
+
+.month-field,
+.saved-field {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #5c564c;
+}
+
+.month-field input,
+.saved-field select {
+    min-width: 11rem;
+    border: none;
+    border-bottom: 1px solid #1d3557;
+    background: transparent;
+    padding: 0.3rem 0;
+    font-size: 1rem;
+    color: #1d3557;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+}
+
+.status {
+    margin-left: auto;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.status.draft {
+    background: #f7f1e4;
+    color: #8a6a2f;
+}
+
+.status.submitted {
+    background: #e8f1ea;
+    color: #2f5d3a;
+}
+
+@media (max-width: 800px) {
+    .status {
+        margin-left: 0;
+    }
+}

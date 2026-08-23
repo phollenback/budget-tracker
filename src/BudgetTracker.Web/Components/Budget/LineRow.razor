@@ -1,0 +1,15 @@
+<div class="line-row">
+    <label>@Line.Name</label>
+    <MoneyInput Value="Line.Amount" ValueChanged="OnAmountChanged" AriaLabel="@Line.Name" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public BudgetLine Line { get; set; } = default!;
+    [Parameter] public EventCallback Changed { get; set; }
+
+    private async Task OnAmountChanged(decimal? amount)
+    {
+        Line.Amount = amount;
+        await Changed.InvokeAsync();
+    }
+}

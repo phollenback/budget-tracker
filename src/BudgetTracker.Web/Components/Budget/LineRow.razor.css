@@ -1,0 +1,13 @@
+.line-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+}
+
+.line-row label {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #2b261e;
+}

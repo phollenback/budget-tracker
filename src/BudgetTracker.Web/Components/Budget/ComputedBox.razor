@@ -1,0 +1,13 @@
+<div class="computed-box @CssClass">
+    <span class="computed-label">@Label</span>
+    <div class="computed-value">
+        <span class="currency">$</span>
+        <span class="amount">@(Value.HasValue ? Value.Value.ToString("N2") : "—")</span>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public decimal? Value { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+}

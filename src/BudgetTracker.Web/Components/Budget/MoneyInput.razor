@@ -1,0 +1,32 @@
+<div class="money-input">
+    <span class="currency">$</span>
+    <input class="amount"
+           type="number"
+           min="0"
+           step="0.01"
+           placeholder="0.00"
+           aria-label="@AriaLabel"
+           value="@DisplayValue"
+           @onchange="OnChange" />
+</div>
+
+@code {
+    [Parameter] public decimal? Value { get; set; }
+    [Parameter] public EventCallback<decimal?> ValueChanged { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+
+    private string DisplayValue => Value?.ToString("0.00") ?? string.Empty;
+
+    private async Task OnChange(ChangeEventArgs e)
+    {
+        decimal? parsed = null;
+        var raw = e.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(raw) && decimal.TryParse(raw, out var amount))
+        {
+            parsed = amount;
+        }
+
+        Value = parsed;
+        await ValueChanged.InvokeAsync(parsed);
+    }
+}
