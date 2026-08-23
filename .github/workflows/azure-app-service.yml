@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: budget-tracker
+  AZURE_WEBAPP_NAME: budgettracker
   DOTNET_VERSION: 9.0.x
 
 jobs:
