@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BudgetTracker.Domain\BudgetTracker.Domain.csproj" />
+    <ProjectReference Include="..\BudgetTracker.Application\BudgetTracker.Application.csproj" />
+    <ProjectReference Include="..\BudgetTracker.Infrastructure\BudgetTracker.Infrastructure.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

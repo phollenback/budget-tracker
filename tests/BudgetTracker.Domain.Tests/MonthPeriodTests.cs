@@ -52,5 +52,6 @@ public class MonthPeriodTests
     public void to_string_is_month_and_year()
     {
         Assert.Equal("June 2026", MonthPeriod.From(2026, 6).ToString());
+        Assert.Equal("June", MonthPeriod.From(2026, 6).MonthName);
     }
 }

@@ -1,18 +1,22 @@
+@using BudgetTracker.Domain
+
 <section class="category-card">
-    <h2>@Title</h2>
+    <h2>@Category.Name</h2>
     @if (!string.IsNullOrWhiteSpace(Note))
     {
         <p class="note">@Note</p>
     }
-    @foreach (var line in Lines)
+    @foreach (var line in Category.Lines)
     {
-        <LineRow Line="line" Changed="Changed" />
+        <LineRow @key="line.Name"
+                 Name="@line.Name"
+                 Amount="@line.Amount.ToInput()"
+                 Changed="Changed" />
     }
 </section>
 
 @code {
-    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public BudgetCategory Category { get; set; } = default!;
     [Parameter] public string? Note { get; set; }
-    [Parameter, EditorRequired] public IReadOnlyList<BudgetLine> Lines { get; set; } = [];
-    [Parameter] public EventCallback Changed { get; set; }
+    [Parameter] public EventCallback<(string Name, decimal? Amount)> Changed { get; set; }
 }

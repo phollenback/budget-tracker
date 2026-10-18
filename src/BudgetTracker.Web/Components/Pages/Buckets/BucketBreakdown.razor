@@ -1,0 +1,219 @@
+@page "/buckets"
+@page "/buckets/{Year:int}/{Month:int}"
+@using BudgetTracker.Application
+@using BudgetTracker.Domain
+@inject BudgetWorkspace Workspace
+@inject NavigationManager Navigation
+
+<PageTitle>Buckets — @Period</PageTitle>
+
+<div class="sheet bucket-sheet">
+    <header class="sheet-header">
+        <div>
+            <p class="form-id">Monthly envelopes</p>
+            <h1>Buckets</h1>
+            <p class="lede">
+                Recurring buckets follow you month to month. Add a little at a time and watch the color rise.
+                One-month buckets stay only in @Period.
+            </p>
+        </div>
+    </header>
+
+    <MonthNavigator Period="Period"
+                    ShowStatus="false"
+                    SavedMonths="SavedMonths"
+                    PeriodChanged="ChangeMonthAsync" />
+
+    <section class="bucket-grid">
+        @foreach (var bucket in Fills)
+        {
+            <article @key="bucket.Id" class="jar-card tone-@bucket.ColorIndex @(bucket.IsFilled ? "filled" : "open")">
+                <header>
+                    <h2>@bucket.Name</h2>
+                    <span class="fill-badge">
+                        @(bucket.IsTemporary ? "This month" : "Every month")
+                    </span>
+                </header>
+                <div class="jar" role="progressbar"
+                     aria-label="@bucket.Name"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="@bucket.ProgressPercent">
+                    <span class="jar-fill" style="@($"height: {bucket.ProgressPercent}%")"></span>
+                    <span class="jar-percent">@bucket.ProgressPercent%</span>
+                </div>
+                <p class="fill-amounts">
+                    <strong>@bucket.Funded</strong>
+                    <span>of @bucket.Target</span>
+                </p>
+                <div class="add-row">
+                    <MoneyInput Value="AdditionFor(bucket.Id)"
+                                ValueChanged="amount => SetAddition(bucket.Id, amount)"
+                                AriaLabel="@($"Add to {bucket.Name}")" />
+                    <button type="button" class="add" @onclick="() => ContributeAsync(bucket.Id)">
+                        Add
+                    </button>
+                </div>
+            </article>
+        }
+
+        <article class="jar-card add-card">
+            <h2>This month only</h2>
+            <p class="hint">Lives in @Period, not the months around it.</p>
+            <label>
+                Name
+                <InputText @bind-Value="_tempName" />
+            </label>
+            <label>
+                Target
+                <MoneyInput @bind-Value="_tempTarget" AriaLabel="This month bucket target" />
+            </label>
+            <button type="button" class="add" @onclick="AddTemporaryAsync">
+                Add to @Period.MonthName
+            </button>
+        </article>
+    </section>
+
+    <section class="recurring-form">
+        <h2>Add a recurring bucket</h2>
+        <p class="hint">Shows up every month with its own fill for that month.</p>
+        <div class="recurring-fields">
+            <label>
+                Name
+                <InputText @bind-Value="_recurringName" />
+            </label>
+            <label>
+                Monthly target
+                <MoneyInput @bind-Value="_recurringTarget" AriaLabel="Recurring bucket monthly target" />
+            </label>
+            <button type="button" class="add" @onclick="AddRecurringAsync">
+                Add bucket
+            </button>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <p class="status-message">@StatusMessage</p>
+    }
+</div>
+
+@code {
+    [Parameter] public int? Year { get; set; }
+    [Parameter] public int? Month { get; set; }
+
+    private MonthPeriod Period { get; set; } = MonthPeriod.From(DateOnly.FromDateTime(DateTime.Today));
+    private IReadOnlyList<MonthBucketFill> Fills { get; set; } = [];
+    private IReadOnlyList<SavedMonth> SavedMonths { get; set; } = [];
+    private readonly Dictionary<Guid, decimal?> _additions = [];
+    private string _recurringName = string.Empty;
+    private decimal? _recurringTarget;
+    private string _tempName = string.Empty;
+    private decimal? _tempTarget;
+    private string? StatusMessage { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var period = ResolvePeriod();
+        if (Year != period.Year || Month != period.Month)
+        {
+            Navigation.NavigateTo($"/buckets/{period.Year}/{period.Month}", replace: true);
+            return;
+        }
+
+        Period = period;
+        SavedMonths = await Workspace.ListSavedMonthsAsync();
+        await ReloadBoardAsync();
+    }
+
+    private async Task ReloadBoardAsync()
+    {
+        Fills = await Workspace.GetManualBucketsAsync(Period);
+        StatusMessage = null;
+    }
+
+    private MonthPeriod ResolvePeriod()
+    {
+        if (Year is >= 2000 and <= 2100 && Month is >= 1 and <= 12)
+        {
+            return MonthPeriod.From(Year.Value, Month.Value);
+        }
+
+        return MonthPeriod.From(DateOnly.FromDateTime(DateTime.Today));
+    }
+
+    private Task ChangeMonthAsync(MonthPeriod nextPeriod)
+    {
+        if (nextPeriod != Period)
+        {
+            _additions.Clear();
+            Navigation.NavigateTo($"/buckets/{nextPeriod.Year}/{nextPeriod.Month}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private decimal? AdditionFor(Guid id) =>
+        _additions.TryGetValue(id, out var amount) ? amount : null;
+
+    private void SetAddition(Guid id, decimal? amount) => _additions[id] = amount;
+
+    private async Task ContributeAsync(Guid bucketId)
+    {
+        var amount = MoneyInputMapping.ToMoney(AdditionFor(bucketId));
+        if (amount.Equals(Money.Zero))
+        {
+            StatusMessage = "Enter an amount to add.";
+            return;
+        }
+
+        await Workspace.ContributeToBucketAsync(bucketId, Period, amount);
+        _additions[bucketId] = null;
+        await ReloadBoardAsync();
+    }
+
+    private async Task AddRecurringAsync()
+    {
+        if (!TryTarget(_recurringName, _recurringTarget, out var target))
+        {
+            return;
+        }
+
+        await Workspace.AddRecurringBucketAsync(_recurringName, target);
+        _recurringName = string.Empty;
+        _recurringTarget = null;
+        await ReloadBoardAsync();
+    }
+
+    private async Task AddTemporaryAsync()
+    {
+        if (!TryTarget(_tempName, _tempTarget, out var target))
+        {
+            return;
+        }
+
+        await Workspace.AddTemporaryBucketAsync(Period, _tempName, target);
+        _tempName = string.Empty;
+        _tempTarget = null;
+        await ReloadBoardAsync();
+    }
+
+    private bool TryTarget(string name, decimal? amount, out Money target)
+    {
+        target = Money.Zero;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            StatusMessage = "Give the bucket a name.";
+            return false;
+        }
+
+        target = MoneyInputMapping.ToMoney(amount);
+        if (target.Equals(Money.Zero))
+        {
+            StatusMessage = "Set a monthly target.";
+            return false;
+        }
+
+        return true;
+    }
+}

@@ -1,0 +1,239 @@
+﻿@page "/"
+@page "/{Year:int}/{Month:int}"
+@using BudgetTracker.Application
+@using BudgetTracker.Domain
+@inject BudgetWorkspace Workspace
+@inject NavigationManager Navigation
+
+<PageTitle>Monthly Budget — @PeriodLabel</PageTitle>
+
+<div class="sheet">
+    <header class="sheet-header">
+        <div>
+            <p class="form-id">29-3914</p>
+            <h1>Monthly Budget</h1>
+            <p class="lede">
+                To complete your current financial profile, review your monthly expenses.
+            </p>
+        </div>
+        <div class="identity">
+            <label>
+                Name
+                <InputText @bind-Value="OwnerName" />
+            </label>
+            <label>
+                Completed on
+                <InputDate @bind-Value="CompletedOn" />
+            </label>
+        </div>
+    </header>
+
+    <MonthNavigator Period="Budget.Period"
+                    IsSubmitted="Budget.IsSubmitted"
+                    SavedMonths="SavedMonths"
+                    PeriodChanged="ChangeMonthAsync" />
+
+    <section class="headline-metrics">
+        <label class="metric metric-input">
+            <span>Net Monthly Income</span>
+            <MoneyInput Value="Budget.NetMonthlyIncome.ToInput()"
+                        ValueChanged="OnIncomeChanged"
+                        AriaLabel="Net Monthly Income" />
+        </label>
+        <ComputedBox Label="Less Expenses" Value="Allocation.LessExpenses.Amount" />
+        <ComputedBox Label="Total Monthly Expenses" Value="Allocation.TotalMonthlyExpenses.Amount" />
+    </section>
+
+    <div class="columns">
+        <div class="column">
+            @foreach (var category in LeftCategories)
+            {
+                <CategoryCard @key="category.Name"
+                              Category="category"
+                              Note="@NoteFor(category)"
+                              Changed="OnLineChanged" />
+            }
+        </div>
+
+        <div class="column">
+            @foreach (var category in RightLeadCategories)
+            {
+                <CategoryCard @key="category.Name"
+                              Category="category"
+                              Changed="OnLineChanged" />
+            }
+
+            <div class="bucket essential">
+                <p class="bucket-title">
+                    Essential Expenses (60%)
+                    @if (Allocation.Essential.ShareOfIncome is { } essentialShare)
+                    {
+                        <span class="bucket-actual">@essentialShare</span>
+                    }
+                </p>
+                <ComputedBox Label="Essential Expenses Subtotal" Value="Allocation.Essential.Total.Amount" />
+            </div>
+
+            @if (DiscretionaryCategory is not null)
+            {
+                <CategoryCard Category="DiscretionaryCategory" Changed="OnLineChanged" />
+            }
+
+            <div class="bucket discretionary">
+                <p class="bucket-title">
+                    Discretionary Expenses (20%)
+                    @if (Allocation.Discretionary.ShareOfIncome is { } discretionaryShare)
+                    {
+                        <span class="bucket-actual">@discretionaryShare</span>
+                    }
+                </p>
+                <ComputedBox Label="Discretionary Expenses Subtotal" Value="Allocation.Discretionary.Total.Amount" />
+            </div>
+
+            <ComputedBox CssClass="@SurplusCss"
+                         Label="Total Surplus / Deficit"
+                         Value="Allocation.SurplusOrDeficit.Amount" />
+
+            @if (SavingCategory is not null)
+            {
+                <CategoryCard Category="SavingCategory"
+                              Note="@NoteFor(SavingCategory)"
+                              Changed="OnLineChanged" />
+            }
+
+            <div class="bucket saving">
+                <p class="bucket-title">
+                    Saving and Investing (20%)
+                    @if (Allocation.SavingAndInvesting.ShareOfIncome is { } savingShare)
+                    {
+                        <span class="bucket-actual">@savingShare</span>
+                    }
+                </p>
+                <ComputedBox Label="Saving and Investing Subtotal" Value="Allocation.SavingAndInvesting.Total.Amount" />
+            </div>
+        </div>
+    </div>
+
+    <footer class="sheet-footer">
+        <p class="footnote">
+            The 20% includes both after-tax and pre-tax savings and investments,
+            including contributions to employer-sponsored retirement plans.
+        </p>
+        <div class="actions">
+            @if (!string.IsNullOrWhiteSpace(StatusMessage))
+            {
+                <p class="status-message">@StatusMessage</p>
+            }
+            <button type="button" class="submit" @onclick="SubmitAsync">
+                @(Budget.IsSubmitted ? "Update " : "Submit ")@PeriodLabel
+            </button>
+        </div>
+    </footer>
+</div>
+
+@code {
+    private static readonly string[] LeftNames =
+        ["Housing", "Transportation", "Debt Payments", "Health Care / Insurance"];
+    private static readonly string[] RightLeadNames =
+        ["Household / Personal", "Children"];
+
+    [Parameter] public int? Year { get; set; }
+    [Parameter] public int? Month { get; set; }
+
+    private MonthlyBudget Budget { get; set; } = MonthlyBudget.Open(MonthPeriod.From(DateOnly.FromDateTime(DateTime.Today)));
+    private IReadOnlyList<SavedMonth> SavedMonths { get; set; } = [];
+    private string? StatusMessage { get; set; }
+    private bool _loaded;
+
+    private AllocationSnapshot Allocation => Budget.CalculateAllocation();
+    private string PeriodLabel => Budget.Period.ToString();
+    private string SurplusCss => Allocation.SurplusOrDeficit.IsDeficit ? "surplus deficit" : "surplus";
+
+    private string OwnerName
+    {
+        get => Budget.OwnerName;
+        set => Budget.SetOwnerName(value);
+    }
+
+    private DateOnly? CompletedOn
+    {
+        get => Budget.CompletedOn;
+        set => Budget.SetCompletedOn(value);
+    }
+
+    private IEnumerable<BudgetCategory> LeftCategories =>
+        Budget.Categories.Where(category => LeftNames.Contains(category.Name));
+
+    private IEnumerable<BudgetCategory> RightLeadCategories =>
+        Budget.Categories.Where(category => RightLeadNames.Contains(category.Name));
+
+    private BudgetCategory? DiscretionaryCategory => Budget.CategoryNamed("Discretionary");
+    private BudgetCategory? SavingCategory => Budget.CategoryNamed("Saving and Investing");
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var period = ResolvePeriod();
+        if (Year != period.Year || Month != period.Month)
+        {
+            Navigation.NavigateTo($"/{period.Year}/{period.Month}", replace: true);
+            return;
+        }
+
+        if (_loaded && Budget.Period == period)
+        {
+            return;
+        }
+
+        Budget = await Workspace.GetOrOpenAsync(period);
+        SavedMonths = await Workspace.ListSavedMonthsAsync();
+        StatusMessage = null;
+        _loaded = true;
+    }
+
+    private MonthPeriod ResolvePeriod()
+    {
+        if (Year is >= 2000 and <= 2100 && Month is >= 1 and <= 12)
+        {
+            return MonthPeriod.From(Year.Value, Month.Value);
+        }
+
+        return MonthPeriod.From(DateOnly.FromDateTime(DateTime.Today));
+    }
+
+    private async Task ChangeMonthAsync(MonthPeriod nextPeriod)
+    {
+        if (nextPeriod == Budget.Period)
+        {
+            return;
+        }
+
+        if (Budget.HasWorksheetData)
+        {
+            await Workspace.SaveDraftAsync(Budget);
+        }
+
+        Navigation.NavigateTo($"/{nextPeriod.Year}/{nextPeriod.Month}");
+    }
+
+    private async Task SubmitAsync()
+    {
+        await Workspace.SubmitAsync(Budget);
+        SavedMonths = await Workspace.ListSavedMonthsAsync();
+        StatusMessage = $"{PeriodLabel} submitted.";
+    }
+
+    private Task OnIncomeChanged(decimal? amount)
+    {
+        Budget.SetIncome(MoneyInputMapping.ToMoney(amount));
+        return Task.CompletedTask;
+    }
+
+    private void OnLineChanged((string Name, decimal? Amount) change) =>
+        Budget.SetLineAmount(change.Name, MoneyInputMapping.ToMoney(change.Amount));
+
+    private static string? NoteFor(BudgetCategory category) => category.Name switch
+    {
+        "Health Care / Insurance" or "Saving and Investing" => "Not deducted from paycheck",
+        _ => null
+    };
+}

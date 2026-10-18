@@ -1,4 +1,5 @@
 @using System.Globalization
+@using BudgetTracker.Domain
 
 <div class="month-nav">
     <button type="button" class="arrow" @onclick="OnPrevious" aria-label="Previous month">‹</button>
@@ -12,9 +13,12 @@
 
     <button type="button" class="arrow" @onclick="OnNext" aria-label="Next month">›</button>
 
-    <span class="status @(IsSubmitted ? "submitted" : "draft")">
-        @(IsSubmitted ? "Submitted" : "Not submitted")
-    </span>
+    @if (ShowStatus)
+    {
+        <span class="status @(IsSubmitted ? "submitted" : "draft")">
+            @(IsSubmitted ? "Submitted" : "Not submitted")
+        </span>
+    }
 
     @if (SavedMonths.Count > 0)
     {
@@ -23,12 +27,12 @@
             <select @onchange="OnMonthInput">
                 @if (SavedMonths.All(month => month.Period != Period))
                 {
-                    <option value="@MonthValue" selected>@Period.ToString("MMMM yyyy")</option>
+                    <option value="@MonthValue" selected>@Period</option>
                 }
                 @foreach (var month in SavedMonths)
                 {
                     <option value="@ToMonthValue(month.Period)" selected="@(month.Period == Period)">
-                        @month.Period.ToString("MMMM yyyy") — @(month.IsSubmitted ? "submitted" : "draft")
+                        @month.Period — @(month.IsSubmitted ? "submitted" : "draft")
                     </option>
                 }
             </select>
@@ -37,16 +41,17 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public DateOnly Period { get; set; }
+    [Parameter, EditorRequired] public MonthPeriod Period { get; set; } = default!;
     [Parameter] public bool IsSubmitted { get; set; }
-    [Parameter] public IReadOnlyList<MonthWorksheetSummary> SavedMonths { get; set; } = [];
-    [Parameter] public EventCallback<DateOnly> PeriodChanged { get; set; }
+    [Parameter] public bool ShowStatus { get; set; } = true;
+    [Parameter] public IReadOnlyList<SavedMonth> SavedMonths { get; set; } = [];
+    [Parameter] public EventCallback<MonthPeriod> PeriodChanged { get; set; }
 
     private string MonthValue => ToMonthValue(Period);
 
-    private Task OnPrevious() => PeriodChanged.InvokeAsync(Period.AddMonths(-1));
+    private Task OnPrevious() => PeriodChanged.InvokeAsync(Period.Previous());
 
-    private Task OnNext() => PeriodChanged.InvokeAsync(Period.AddMonths(1));
+    private Task OnNext() => PeriodChanged.InvokeAsync(Period.Next());
 
     private Task OnMonthInput(ChangeEventArgs e)
     {
@@ -60,8 +65,8 @@
             return Task.CompletedTask;
         }
 
-        return PeriodChanged.InvokeAsync(BudgetForm.FirstOfMonth(parsed));
+        return PeriodChanged.InvokeAsync(MonthPeriod.From(parsed));
     }
 
-    private static string ToMonthValue(DateOnly period) => period.ToString("yyyy-MM");
+    private static string ToMonthValue(MonthPeriod period) => period.Start.ToString("yyyy-MM");
 }

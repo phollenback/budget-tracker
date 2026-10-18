@@ -1,0 +1,177 @@
+.year-sheet.sheet {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 2.25rem 2.5rem;
+    background: #fffdf8;
+    border: 1px solid #d8d0c0;
+    box-shadow: 0 10px 30px rgba(36, 29, 16, 0.08);
+}
+
+.year-sheet .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    border-bottom: 3px solid #1d3557;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.year-sheet .form-id {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: #6d6458;
+}
+
+.year-sheet h1 {
+    margin: 0.15rem 0 0.4rem;
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    font-size: 2rem;
+    color: #1d3557;
+}
+
+.year-sheet .lede {
+    margin: 0;
+    max-width: 34rem;
+    color: #4a4338;
+}
+
+.year-sheet .year-toggle {
+    display: flex;
+    align-items: end;
+    gap: 0.65rem;
+}
+
+.year-sheet .year-toggle label {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #5c564c;
+}
+
+.year-sheet .year-toggle input {
+    width: 6rem;
+    border: none;
+    border-bottom: 1px solid #1d3557;
+    background: transparent;
+    padding: 0.3rem 0;
+    font-size: 1.1rem;
+    color: #1d3557;
+}
+
+.year-sheet .arrow {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid #1d3557;
+    background: #fff;
+    color: #1d3557;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.year-sheet .arrow:hover {
+    background: #1d3557;
+    color: #f6f0e4;
+}
+
+.year-sheet .headline-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.year-sheet .computed-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0.85rem;
+    background: #eef2f6;
+    border: 1px solid #c5ced8;
+}
+
+.year-sheet .computed-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.year-sheet .computed-value .amount {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.month-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.month-card {
+    display: grid;
+    gap: 0.35rem;
+    min-height: 7.5rem;
+    padding: 0.85rem 0.9rem;
+    text-decoration: none;
+    color: inherit;
+    background: #f7f3ea;
+    border: 1px solid #d8d0c0;
+}
+
+.month-card.has-data {
+    background: #fff;
+}
+
+.month-card.submitted {
+    border-color: #2f5d3a;
+}
+
+.month-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #1d3557;
+}
+
+.month-spent {
+    font-size: 1.2rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.month-status {
+    font-size: 0.75rem;
+    color: #6d6458;
+}
+
+.month-card.submitted .month-status {
+    color: #2f5d3a;
+    font-weight: 700;
+}
+
+@media (max-width: 800px) {
+    .year-sheet {
+        padding: 1.25rem;
+    }
+
+    .year-sheet .sheet-header,
+    .year-sheet .headline-metrics,
+    .month-grid {
+        grid-template-columns: 1fr 1fr;
+        display: grid;
+    }
+
+    .year-sheet .sheet-header {
+        display: grid;
+    }
+}

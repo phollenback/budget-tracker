@@ -1,10 +1,17 @@
 .bar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 1.5rem;
     max-width: 1100px;
     margin: 0 auto;
     padding: 0.85rem 2.25rem;
+}
+
+.primary {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 .brand {

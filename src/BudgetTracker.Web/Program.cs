@@ -1,20 +1,25 @@
+using BudgetTracker.Application;
+using BudgetTracker.Domain;
+using BudgetTracker.Infrastructure;
 using BudgetTracker.Web.Components;
-using BudgetTracker.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddSingleton<IBudgetWorksheetStore, FileBudgetWorksheetStore>();
+
+var dataRoot = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
+builder.Services.AddSingleton<IMonthlyBudgetRepository>(_ =>
+    new FileMonthlyBudgetRepository(Path.Combine(dataRoot, "worksheets")));
+builder.Services.AddSingleton<IBucketBookRepository>(_ =>
+    new FileBucketBookRepository(Path.Combine(dataRoot, "buckets")));
+builder.Services.AddSingleton<BudgetWorkspace>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

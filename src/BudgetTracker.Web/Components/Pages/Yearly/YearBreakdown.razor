@@ -1,0 +1,90 @@
+@page "/year"
+@page "/year/{Year:int}"
+@using BudgetTracker.Application
+@using BudgetTracker.Domain
+@inject BudgetWorkspace Workspace
+@inject NavigationManager Navigation
+
+<PageTitle>Yearly spending — @_year</PageTitle>
+
+<div class="sheet year-sheet">
+    <header class="sheet-header">
+        <div>
+            <p class="form-id">Year overview</p>
+            <h1>Yearly spending</h1>
+            <p class="lede">
+                Total spent each month, with a year total. Open a month to edit the worksheet.
+            </p>
+        </div>
+        <div class="year-toggle">
+            <button type="button" class="arrow" @onclick="PreviousYear" aria-label="Previous year">‹</button>
+            <label>
+                Year
+                <input type="number" min="2000" max="2100" value="@_year" @onchange="OnYearInput" />
+            </label>
+            <button type="button" class="arrow" @onclick="NextYear" aria-label="Next year">›</button>
+        </div>
+    </header>
+
+    <section class="headline-metrics">
+        <ComputedBox Label="Spent this year" Value="Overview.TotalSpent.Amount" />
+        <ComputedBox Label="Income this year" Value="Overview.TotalIncome.Amount" />
+        <div class="computed-box">
+            <span class="computed-label">Months submitted</span>
+            <div class="computed-value">
+                <span class="amount">@Overview.SubmittedCount</span>
+            </div>
+        </div>
+    </section>
+
+    <ol class="month-grid">
+        @foreach (var month in Overview.Months)
+        {
+            <li>
+                <a class="month-card @(month.HasWorksheet ? "has-data" : "empty") @(month.IsSubmitted ? "submitted" : null)"
+                   href="@($"/{month.Period.Year}/{month.Period.Month}")">
+                    <span class="month-name">@month.MonthName</span>
+                    <span class="month-spent">@(month.HasWorksheet ? month.Spent.ToString() : "—")</span>
+                    <span class="month-status">
+                        @(month.IsSubmitted ? "Submitted" : month.HasWorksheet ? "Draft" : "No worksheet")
+                    </span>
+                </a>
+            </li>
+        }
+    </ol>
+</div>
+
+@code {
+    [Parameter] public int? Year { get; set; }
+
+    private int _year = DateTime.Today.Year;
+    private YearlySpending Overview { get; set; } =
+        YearlySpending.Assemble(YearPeriod.From(DateTime.Today.Year), []);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var year = Year is >= 2000 and <= 2100 ? Year.Value : DateTime.Today.Year;
+        if (Year != year)
+        {
+            Navigation.NavigateTo($"/year/{year}", replace: true);
+            return;
+        }
+
+        _year = year;
+        Overview = await Workspace.GetYearAsync(YearPeriod.From(year));
+    }
+
+    private void PreviousYear() => Navigation.NavigateTo($"/year/{_year - 1}");
+
+    private void NextYear() => Navigation.NavigateTo($"/year/{_year + 1}");
+
+    private Task OnYearInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(Convert.ToString(e.Value), out var year) && year is >= 2000 and <= 2100)
+        {
+            Navigation.NavigateTo($"/year/{year}");
+        }
+
+        return Task.CompletedTask;
+    }
+}

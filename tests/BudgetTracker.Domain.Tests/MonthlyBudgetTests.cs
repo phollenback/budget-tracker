@@ -131,5 +131,52 @@ public class MonthlyBudgetTests
         Assert.Equal(Money.From(50m), budget.AllLines().Single(line => line.Name == "Long-term Care Insurance").Amount);
     }
 
+    [Fact]
+    public void restore_preserves_submission_without_opening_a_new_identity()
+    {
+        var id = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var submittedAt = new DateTime(2026, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var budget = MonthlyBudget.Restore(
+            id,
+            MonthPeriod.From(2026, 6),
+            "Peyton",
+            new DateOnly(2026, 6, 15),
+            Money.From(5000m),
+            BudgetStatus.Submitted,
+            submittedAt,
+            new Dictionary<string, Money> { ["Mortgage/Rent"] = Money.From(1500m) });
+
+        Assert.Equal(id, budget.Id);
+        Assert.True(budget.IsSubmitted);
+        Assert.Equal(submittedAt, budget.SubmittedAt);
+        Assert.Equal("Peyton", budget.OwnerName);
+        Assert.Equal(Money.From(1500m), budget.EssentialSubtotal);
+        Assert.True(budget.HasWorksheetData);
+    }
+
+    [Fact]
+    public void empty_draft_does_not_count_as_worksheet_data()
+    {
+        var budget = OpenJune();
+        budget.SetOwnerName("Peyton");
+
+        Assert.False(budget.HasWorksheetData);
+    }
+
+    [Fact]
+    public void changing_income_recalculates_cached_allocation()
+    {
+        var budget = OpenJune();
+        budget.SetIncome(Money.From(5000m));
+        budget.SetLineAmount("Mortgage/Rent", Money.From(3000m));
+
+        Assert.Equal(Percentage.FromPoints(60m), budget.CalculateAllocation().Essential.ShareOfIncome);
+
+        budget.SetIncome(Money.From(6000m));
+
+        Assert.Equal(Percentage.FromPoints(50m), budget.CalculateAllocation().Essential.ShareOfIncome);
+    }
+
     private static MonthlyBudget OpenJune() => MonthlyBudget.Open(MonthPeriod.From(2026, 6));
 }
