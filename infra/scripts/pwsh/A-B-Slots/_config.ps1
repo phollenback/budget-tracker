@@ -15,7 +15,7 @@ $PlanWorkerSize  = "Small"   # P1v3
 $PlanWorkerCount = 1
 
 $AppName         = "budgettracker-ab"
-$LinuxFxVersion  = "DOTNETCORE|9.0"
+$LinuxFxVersion  = "DOTNETCORE|10.0"
 
 $LawName             = "budgettracker-law"
 $LogRetentionInDays  = 30
